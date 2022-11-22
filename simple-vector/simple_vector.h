@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <iostream>
 #include <utility>
+#include <type_traits>
 
 
 using namespace std;
@@ -45,14 +46,12 @@ public:
     };
 
     // Создаёт вектор из size элементов, инициализированных значением по умолчанию
-    explicit SimpleVector(size_t size) {
+    explicit SimpleVector(size_t size, const Type& val = value_type()) {
         size_=size;
         cap_ = size;
         v_ = new Type[cap_];
+        std::fill_n(v_.begin(), size_, val);
         
-        for(size_t i = 0; i < size_; ++i){
-            v_[i] = 0;
-        }
     }
 
     // Создаёт вектор из size элементов, инициализированных значением value
@@ -60,10 +59,7 @@ public:
         size_=size;
         cap_ = size;
         v_ = new Type[cap_];
-        
-        for(size_t i = 0; i < size_; ++i){
-            v_[i] = value;
-        }
+        std::fill_n(v_.begin(), size_, value);
     }
 
     // Создаёт вектор из std::initializer_list
@@ -72,9 +68,7 @@ public:
         cap_= init.size();
         v_ = new Type[cap_];
         size_t i = 0;
-        for(auto it = init.begin(); it != init.end(); ++it, ++i){
-            v_[i] = *it;
-        }
+        std::copy(init.begin(),init.end(), v_.begin());
     }
     
     ~SimpleVector(){
@@ -103,11 +97,13 @@ public:
 
     // Возвращает ссылку на элемент с индексом index
     Type& operator[](size_t index) noexcept {
+        assert(index < size_);
         return v_[index];
     }
 
     // Возвращает константную ссылку на элемент с индексом index
     const Type& operator[](size_t index) const noexcept {
+        assert(index < size_);
         return v_[index];
     }
 
@@ -216,15 +212,10 @@ public:
     }
     
     SimpleVector(const SimpleVector& other) {
-        
             size_= other.size_;
             cap_ = other.cap_;
             v_ = new Type[cap_];
-
-            for(size_t i = 0; i < size_; ++i){
-                v_[i] = other.v_[i];
-            }
-        
+            std::copy(other.begin(),other.end(),v_.begin());
     }
     
     SimpleVector(SimpleVector&& other) {
@@ -303,6 +294,7 @@ public:
     // Если перед вставкой значения вектор был заполнен полностью,
     // вместимость вектора должна увеличиться вдвое, а для вектора вместимостью 0 стать равной 1
     Iterator Insert(ConstIterator pos, const Type& value) {
+        assert(pos >= begin() && pos <= end());
         if(size_==0 && cap_!=0) {
             v_[0] = value;
             size_ = 1;
@@ -347,6 +339,7 @@ public:
     }
     
     Iterator Insert(ConstIterator pos, Type&& value) {
+        assert(pos >= begin() && pos <= end());
         if(size_==0 && cap_!=0) {
             v_[0] = move(value);
             size_ = 1;
@@ -397,6 +390,7 @@ public:
 
     // Удаляет элемент вектора в указанной позиции
     Iterator Erase(ConstIterator pos) {
+        assert(pos >= begin() && pos <= end());
         for(Type* it = const_cast<Iterator>(pos), *it2 = const_cast<Iterator>(pos) +1; it!= end(); ++it, ++it2){
             *it= move(*it2);
         }
@@ -409,19 +403,9 @@ public:
     // Обменивает значение с другим вектором
     void swap(SimpleVector& other) noexcept {
         if(other != *this){
-            size_t s;
-            s = other.size_;
-            other.size_ = size_;
-            size_ = s;
-            
-            s = other.cap_;
-            other.cap_ = cap_;
-            cap_ = s;
-            
-            Type* tmp_;
-            tmp_ = other.v_;
-            other.v_ = v_;
-            v_ = tmp_;
+            std::swap(other.size_, size_);
+            std::swap(other.cap_, cap_);
+            std::swap(other.v_, v_);
         }
     }
     
@@ -438,7 +422,7 @@ public:
     }; 
  
     private:
-    Type* v_;
+    ArrayPtr<Type> v_;
     size_t size_;
     size_t cap_;
     

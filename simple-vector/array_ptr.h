@@ -21,6 +21,10 @@ public:
     explicit ArrayPtr(Type* raw_ptr) noexcept {
         raw_ptr_ = raw_ptr;
     }
+    
+    explicit ArrayPtr(ArrayPtr<Type>&& raw_ptr)noexcept{
+        raw_ptr_ = raw_ptr;
+    }
 
     // Запрещаем копирование
     ArrayPtr(const ArrayPtr&) = delete;
@@ -66,9 +70,7 @@ public:
 
     // Обменивается значениям указателя на массив с объектом other
     void swap(ArrayPtr& other) noexcept {
-        Type* tmp = other.raw_ptr_;
-        other.raw_ptr_ = raw_ptr_;
-        raw_ptr_ = tmp;
+        std::swap(other.raw_ptr_, raw_ptr_);
     }
 
 private:
